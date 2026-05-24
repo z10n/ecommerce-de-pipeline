@@ -53,4 +53,4 @@ Id: postgres_default | Host: postgres-project | Schema: ecommerce_dw | Login: ad
 * SQL-трансформации: GROUP BY, ON CONFLICT DO UPDATE, агрегации
 * Внедрение Data Quality Checks как этапа пайплайна
 * Управление зависимостями через Docker Compose
-🔗 GitHub https://github.com/z10n/ecommerce-de-pipeline.git
+🔗 GitHub [https://github.com/z10n/ecommerce-de-pipeline.git](https://github.com/z10n/ecommerce-de-pipeline)
