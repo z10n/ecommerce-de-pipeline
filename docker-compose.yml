@@ -1,0 +1,63 @@
+services:
+  # 1. БД для проекта E-commerce
+  postgres-project:
+    image: postgres:15
+    container_name: de_postgres_project
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: ecommerce_dw
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # 2. БД для Airflow (служебная)
+  postgres-airflow:
+    image: postgres:15
+    container_name: de_postgres_airflow
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow_db
+    ports:
+      - "5433:5432"
+
+  # 3. Airflow Webserver + инициализация БД
+  airflow-webserver:
+    image: apache/airflow:2.7.1-python3.11
+    container_name: de_airflow_webserver
+    depends_on:
+      - postgres-airflow
+    ports:
+      - "8080:8080"
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres-airflow/airflow_db
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__WEBSERVER__SECRET_KEY=super_secret_key_123
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./scripts:/opt/airflow/scripts
+    command: >
+      bash -c "
+        airflow db migrate &&
+        airflow users create --username admin --password admin --firstname Admin --lastname Admin --role Admin --email admin@example.com || true &&
+        airflow webserver"
+    restart: always
+
+  # 4. Airflow Scheduler
+  airflow-scheduler:
+    image: apache/airflow:2.7.1-python3.11
+    container_name: de_airflow_scheduler
+    depends_on:
+      - postgres-airflow
+      - airflow-webserver
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres-airflow/airflow_db
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./scripts:/opt/airflow/scripts
+    command: scheduler
+    restart: always
